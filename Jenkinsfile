@@ -1,6 +1,11 @@
 pipeline {
     agent any
 
+    environment {
+        APP_NAME = "seguridad_app_${BUILD_NUMBER}" // nombre único para evitar conflictos
+        IMAGE_NAME = "seguridad_contrasenas:latest"
+    }
+
     stages {
 
         stage('Checkout') {
@@ -13,31 +18,31 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 echo '🐳 Construyendo imagen Docker...'
-                sh 'docker build -t seguridad_contrasenas:latest .'
+                sh "docker build -t ${IMAGE_NAME} ."
             }
         }
 
         stage('Run Container') {
             steps {
                 echo '🚀 Iniciando contenedor...'
-                sh 'docker run -d --name seguridad_app -p 5000:5000 seguridad_contrasenas:latest || true'
-                sh 'sleep 5'
+                sh "docker rm -f ${APP_NAME} || true"  // elimina contenedor viejo si existe
+                sh "docker run -d --name ${APP_NAME} -p 5000:5000 ${IMAGE_NAME}"
+                sh "sleep 5"
             }
         }
 
         stage('Test E2E') {
             steps {
-                echo '🧪 Ejecutando pruebas E2E...'
-                sh 'pip install selenium webdriver-manager'
-                sh 'python test_full_flow_e2e.py'
+                echo '🧪 Ejecutando pruebas E2E dentro del contenedor...'
+                sh "docker exec ${APP_NAME} python test_full_flow_e2e.py"
             }
         }
 
         stage('Cleanup') {
             steps {
                 echo '🧹 Limpiando contenedores...'
-                sh 'docker stop seguridad_app || true'
-                sh 'docker rm seguridad_app || true'
+                sh "docker stop ${APP_NAME} || true"
+                sh "docker rm ${APP_NAME} || true"
             }
         }
     }
