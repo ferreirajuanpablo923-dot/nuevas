@@ -1,71 +1,53 @@
 pipeline {
     agent any
 
-    environment {
-        IMAGE_NAME = "seguridad_contrasenas"
-        IMAGE_TAG = "latest"
-    }
-
     stages {
-      
 
-        stage('Build Docker') {
+        stage('Checkout') {
             steps {
-                script {
-                    echo "🏗️ Construyendo imagen Docker..."
-                    sh 'docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .'
-                }
+                echo '📥 Clonando repositorio...'
+                git branch: 'main', url: 'https://github.com/AndresSanmiguel/seguridad_contrasenas1.git'
             }
         }
 
-        stage('Run Tests') {
+        stage('Build Docker Image') {
             steps {
-                script {
-                    echo "🧪 Ejecutando pruebas E2E con Selenium..."
-                    sh 'docker run --rm ${IMAGE_NAME}:${IMAGE_TAG} python test_full_flow_e2e.py'
-                }
+                echo '🐳 Construyendo imagen Docker...'
+                sh 'docker build -t seguridad_contrasenas:latest .'
             }
         }
 
-        stage('Push Image') {
-            when {
-                expression { return env.BRANCH_NAME == 'main' }
-            }
+        stage('Run Container') {
             steps {
-                script {
-                    echo "📦 Subiendo imagen a Docker Hub..."
-                    // Asegúrate de haber configurado tus credenciales en Jenkins (DockerHub)
-                    withCredentials([usernamePassword(credentialsId: 'dockerhub-cred', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
-                        sh '''
-                            echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                            docker tag ${IMAGE_NAME}:${IMAGE_TAG} $DOCKER_USER/${IMAGE_NAME}:${IMAGE_TAG}
-                            docker push $DOCKER_USER/${IMAGE_NAME}:${IMAGE_TAG}
-                        '''
-                    }
-                }
+                echo '🚀 Iniciando contenedor...'
+                sh 'docker run -d --name seguridad_app -p 5000:5000 seguridad_contrasenas:latest || true'
+                sh 'sleep 5'
             }
         }
 
-        stage('Deploy') {
+        stage('Test E2E') {
             steps {
-                script {
-                    echo "🚀 Desplegando contenedor actualizado..."
-                    sh '''
-                        docker stop seguridad_app || true
-                        docker rm seguridad_app || true
-                        docker run -d --name seguridad_app -p 5000:5000 ${IMAGE_NAME}:${IMAGE_TAG}
-                    '''
-                }
+                echo '🧪 Ejecutando pruebas E2E...'
+                sh 'pip install selenium webdriver-manager'
+                sh 'python test_full_flow_e2e.py'
+            }
+        }
+
+        stage('Cleanup') {
+            steps {
+                echo '🧹 Limpiando contenedores...'
+                sh 'docker stop seguridad_app || true'
+                sh 'docker rm seguridad_app || true'
             }
         }
     }
 
     post {
         success {
-            echo '✅ Pipeline completado con éxito.'
+            echo '✅ Pipeline ejecutado correctamente.'
         }
         failure {
-            echo '❌ Hubo un error en el pipeline.'
+            echo '❌ Error en el pipeline.'
         }
     }
 }
