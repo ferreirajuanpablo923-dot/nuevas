@@ -20,7 +20,7 @@ EXPOSE 5000
 
 # Variables de entorno
 ENV FLASK_APP=app.py
-ENV FLASK_RUN_HOST=0.0.0.0
+ENV FLASK_RUN_HOST=8.0.8.0
 ENV FLASK_ENV=production
 
 # Comando para iniciar la app Flask

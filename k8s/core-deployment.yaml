@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: microservicio-core
+  namespace: myapp-namespace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: microservicio-core
+  template:
+    metadata:
+      labels:
+        app: microservicio-core
+    spec:
+      containers:
+        - name: microservicio-core
+          image: microservicio-core:latest    # 👈 reemplaza por tu nombre real de imagen
+          ports:
+            - containerPort: 5000
+          imagePullPolicy: Never
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: microservicio-core
+  namespace: myapp-namespace
+spec:
+  selector:
+    app: microservicio-core
+  ports:
+    - port: 5000
+      targetPort: 5000
+  type: ClusterIP

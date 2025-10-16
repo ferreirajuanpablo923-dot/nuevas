@@ -1,0 +1,23 @@
+global:
+  scrape_interval: 10s
+
+scrape_configs:
+  # Prometheus monitoreándose a sí mismo
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # Controller microservicio
+  - job_name: 'controller'
+    static_configs:
+      - targets: ['controller.myapp-namespace.svc.cluster.local:5000']
+
+  # Validator microservicio
+  - job_name: 'validator'
+    static_configs:
+      - targets: ['validator.myapp-namespace.svc.cluster.local:5000']
+
+  # Microservicio Core
+  - job_name: 'microservicio-core'
+    static_configs:
+      - targets: ['microservicio-core.myapp-namespace.svc.cluster.local:5000']
