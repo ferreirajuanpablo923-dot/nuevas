@@ -1,86 +1,59 @@
 pipeline {
     agent any
-    
+
+    environment {
+        DOCKER_IMAGE = "seguridad_contrasenas1:latest"
+        KUBE_NAMESPACE = "myapp-namespace"
+    }
+
     stages {
         stage('Checkout') {
             steps {
-                echo '📥 Clonando repositorio...'
-                git branch: 'main', 
-                    url: 'https://github.com/AndresSanmiguel/seguridad_contrasenas1.git'
+                git branch: 'main', url: 'https://github.com/ferreirajuanpablo923-dot/nuevas.git'
             }
         }
-        
+
         stage('Build Docker Image') {
             steps {
-                echo '🐳 Construyendo imagen Docker...'
-                sh 'docker build -t seguridad_contrasenas:latest .'
+                script {
+                    echo "Construyendo imagen Docker..."
+                    sh 'docker build -t seguridad_contrasenas1:latest .'
+                }
             }
         }
-        
-        stage('Stop Old Container') {
+
+        stage('Push Docker Image (local)') {
             steps {
-                echo '🧹 Limpiando contenedor antiguo...'
-                sh '''
-                    docker stop seguridad_app || true
-                    docker rm seguridad_app || true
-                '''
+                script {
+                    echo "Imagen construida localmente (sin push a registry)."
+                }
             }
         }
-        
-        stage('Run Container') {
+
+        stage('Deploy to Kubernetes') {
             steps {
-                echo '🚀 Iniciando contenedor...'
-                sh 'docker run -d --name seguridad_app -p 5000:5000 seguridad_contrasenas:latest'
-                sh 'sleep 5'
+                script {
+                    echo "Aplicando despliegue en Kubernetes..."
+                    sh 'kubectl apply -f k8s/core-deployment.yaml -n myapp-namespace'
+                }
             }
         }
-        
-        stage('Test E2E') {
+
+        stage('Post-deploy check') {
             steps {
-                echo '🧪 Ejecutando pruebas E2E...'
-                sh '''
-                    # Ejecutar las pruebas dentro del contenedor Docker
-                    docker exec seguridad_app pip install selenium webdriver-manager || true
-                    docker exec seguridad_app python -m pytest tests/ || true
-                '''
-            }
-        }
-        
-        stage('Health Check') {
-            steps {
-                echo '🏥 Verificando salud de la aplicación...'
-                sh '''
-                    # Verificar que el contenedor está corriendo
-                    docker ps | grep seguridad_app
-                    
-                    # Opcional: hacer un curl a la aplicación
-                    curl -f http://localhost:5000 || echo "App no responde en puerto 5000"
-                '''
-            }
-        }
-        
-        stage('Cleanup') {
-            steps {
-                echo '🧹 Limpiando recursos...'
-                sh '''
-                    # Limpiar imágenes sin usar
-                    docker image prune -f || true
-                '''
+                script {
+                    sh 'kubectl get pods -n myapp-namespace'
+                }
             }
         }
     }
-    
+
     post {
         success {
-            echo '✅ Pipeline ejecutado exitosamente!'
-            echo '🌐 Aplicación disponible en: http://localhost:5000'
+            echo "✅ Despliegue completado exitosamente."
         }
         failure {
-            echo '❌ Error en el pipeline.'
-            sh 'docker logs seguridad_app || true'
-        }
-        always {
-            echo '🏁 Pipeline finalizado.'
+            echo "❌ Error durante el pipeline."
         }
     }
 }
