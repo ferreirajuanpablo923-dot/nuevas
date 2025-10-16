@@ -22,13 +22,14 @@ pipeline {
 
         stage('Publicar artefactos') {
             steps {
-                bat '''
-                    mkdir artifacts
-                    echo Build generado el %DATE% %TIME% > artifacts\\info.txt
-                '''
-                archiveArtifacts artifacts: 'artifacts/**/*', fingerprint: true
-            }
-        }
+               bat '''
+            if not exist artifacts mkdir artifacts
+            echo Build generado el %DATE% %TIME% > artifacts\\info.txt
+        '''
+        archiveArtifacts artifacts: 'artifacts/**/*', fingerprint: true
+    }
+}
+
 
         stage('Desplegar en Kubernetes') {
             steps {
