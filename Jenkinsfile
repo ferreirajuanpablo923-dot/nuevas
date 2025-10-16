@@ -9,51 +9,44 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                echo "📥 Clonando repositorio..."
                 git branch: 'main', url: 'https://github.com/ferreirajuanpablo923-dot/nuevas.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
-                script {
-                    echo "Construyendo imagen Docker..."
-                    sh 'docker build -t seguridad_contrasenas1:latest .'
-                }
-            }
-        }
-
-        stage('Push Docker Image (local)') {
-            steps {
-                script {
-                    echo "Imagen construida localmente (sin push a registry)."
-                }
+                echo "🐳 Construyendo imagen Docker..."
+                bat """
+                docker build -t %DOCKER_IMAGE% .
+                """
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                script {
-                    echo "Aplicando despliegue en Kubernetes..."
-                    sh 'kubectl apply -f k8s/core-deployment.yaml -n myapp-namespace'
-                }
+                echo "🚀 Aplicando despliegue en Kubernetes..."
+                bat """
+                kubectl apply -f k8s/core-deployment.yaml -n %KUBE_NAMESPACE%
+                """
             }
         }
 
-        stage('Post-deploy check') {
+        stage('Ver pods activos') {
             steps {
-                script {
-                    sh 'kubectl get pods -n myapp-namespace'
-                }
+                bat """
+                kubectl get pods -n %KUBE_NAMESPACE%
+                """
             }
         }
     }
 
     post {
         success {
-            echo "✅ Despliegue completado exitosamente."
+            echo "✅ Pipeline ejecutado correctamente en Windows — Docker + K8s OK"
         }
         failure {
-            echo "❌ Error durante el pipeline."
+            echo "❌ Error en el pipeline (revisar pasos anteriores)."
         }
     }
 }
