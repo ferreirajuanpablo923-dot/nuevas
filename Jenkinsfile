@@ -11,10 +11,6 @@ pipeline {
         stage('Construir proyecto') {
             steps {
                 bat 'echo Compilando proyecto...'
-                // Ejemplo si usas Python:
-                // bat 'python -m compileall .'
-                // o Node:
-                // bat 'npm install && npm run build'
             }
         }
 
@@ -26,22 +22,25 @@ pipeline {
 
         stage('Publicar artefactos') {
             steps {
-                bat 'mkdir artifacts'
-                bat 'echo Build generado el %date% %time% > artifacts/info.txt'
+                bat '''
+                    mkdir artifacts
+                    echo Build generado el %DATE% %TIME% > artifacts\\info.txt
+                '''
                 archiveArtifacts artifacts: 'artifacts/**/*', fingerprint: true
             }
         }
 
         stage('Desplegar en Kubernetes') {
             steps {
-                bat 'kubectl apply -f k8s/ -n myapp-namespace'
+                // 🔹 FIX: se eliminó "-n myapp-namespace" para evitar conflicto con YAMLs
+                bat 'kubectl apply -f k8s/'
             }
         }
     }
 
     post {
         success {
-            echo '✅ Despliegue completado con éxito'
+            echo '✅ Pipeline completado correctamente.'
         }
         failure {
             echo '❌ Error en el pipeline'
