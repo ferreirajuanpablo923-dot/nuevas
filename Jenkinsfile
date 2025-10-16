@@ -1,52 +1,50 @@
 pipeline {
     agent any
 
-    environment {
-        DOCKER_IMAGE = "seguridad_contrasenas1:latest"
-        KUBE_NAMESPACE = "myapp-namespace"
-    }
-
     stages {
-        stage('Checkout') {
+        stage('Clonar repositorio') {
             steps {
-                echo "📥 Clonando repositorio..."
                 git branch: 'main', url: 'https://github.com/ferreirajuanpablo923-dot/nuevas.git'
             }
         }
 
-        stage('Build Docker Image') {
+        stage('Construir proyecto') {
             steps {
-                echo "🐳 Construyendo imagen Docker..."
-                bat """
-                docker build -t %DOCKER_IMAGE% .
-                """
+                bat 'echo Compilando proyecto...'
+                // Ejemplo si usas Python:
+                // bat 'python -m compileall .'
+                // o Node:
+                // bat 'npm install && npm run build'
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Construir imagen Docker') {
             steps {
-                echo "🚀 Aplicando despliegue en Kubernetes..."
-                bat """
-                kubectl apply -f k8s/core-deployment.yaml -n %KUBE_NAMESPACE%
-                """
+                bat 'docker build -t seguridad_contrasenas1:latest .'
             }
         }
 
-        stage('Ver pods activos') {
+        stage('Publicar artefactos') {
             steps {
-                bat """
-                kubectl get pods -n %KUBE_NAMESPACE%
-                """
+                bat 'mkdir artifacts'
+                bat 'echo Build generado el %date% %time% > artifacts/info.txt'
+                archiveArtifacts artifacts: 'artifacts/**/*', fingerprint: true
+            }
+        }
+
+        stage('Desplegar en Kubernetes') {
+            steps {
+                bat 'kubectl apply -f k8s/ -n myapp-namespace'
             }
         }
     }
 
     post {
         success {
-            echo "✅ Pipeline ejecutado correctamente en Windows — Docker + K8s OK"
+            echo '✅ Despliegue completado con éxito'
         }
         failure {
-            echo "❌ Error en el pipeline (revisar pasos anteriores)."
+            echo '❌ Error en el pipeline'
         }
     }
 }
