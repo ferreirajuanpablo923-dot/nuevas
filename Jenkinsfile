@@ -21,13 +21,17 @@ pipeline {
         }
 
         stage('Publicar artefactos') {
-            steps {
-               bat '''
+    steps {
+        bat '''
             if not exist artifacts mkdir artifacts
             echo Build generado el %DATE% %TIME% > artifacts\\info.txt
+            dir artifacts
+            type artifacts\\info.txt
         '''
-        archiveArtifacts artifacts: 'artifacts/**/*', fingerprint: true
+        archiveArtifacts artifacts: 'artifacts/**', fingerprint: true
     }
+}
+
 }
 
 
